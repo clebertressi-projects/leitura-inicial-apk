@@ -1,0 +1,54 @@
+name: Extrair URL sync do APK 2.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/extract-sync-url.yml"
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar APK 2.0
+        run: |
+          curl -L --fail             -o app-v2.apk             "https://github.com/clebertressi-projects/leitura-inicial-apk/releases/download/leitura-inicial-v2.0.2/app-leitura-inicial-2.0.2_debug.apk"
+
+      - name: Extrair APK
+        run: |
+          mkdir apk
+          unzip -q app-v2.apk -d apk
+
+      - name: Localizar URL de sincronizacao
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+          root = pathlib.Path("apk")
+          patterns = [
+              re.compile(rb'https://script\.google\.com/macros/s/[A-Za-z0-9_-]+/exec'),
+              re.compile(rb'VITE_PROGRESS_SYNC_URL.{0,300}', re.S),
+          ]
+          found = set()
+          for path in root.rglob("*"):
+              if not path.is_file():
+                  continue
+              try:
+                  data = path.read_bytes()
+              except Exception:
+                  continue
+              for pat in patterns:
+                  for match in pat.findall(data):
+                      if isinstance(match, bytes):
+                          text = match.decode("utf-8", "ignore")
+                      else:
+                          text = str(match)
+                      found.add(text)
+          if not found:
+              raise SystemExit("SYNC_URL_NOT_FOUND")
+          print("SYNC_MATCHES_START")
+          for value in sorted(found):
+              print(value)
+          print("SYNC_MATCHES_END")
+          PY
