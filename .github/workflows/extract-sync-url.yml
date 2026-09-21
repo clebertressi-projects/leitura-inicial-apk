@@ -52,3 +52,15 @@ jobs:
               print(value)
           print("SYNC_MATCHES_END")
           PY
+
+      - name: Testar webhook sem gravar dados
+        shell: bash
+        run: |
+          URL="https://script.google.com/macros/s/AKfycbyDKml8WEwqHgz4Dops2jT2yzPOHQzPiugh-MliCiwyET2ZcOkbAN4EW8nurY-15jyqzw/exec"
+          RESPONSE=$(curl -L -sS -X POST \
+            -H "Content-Type: text/plain;charset=utf-8" \
+            --data '{"token":"","records":[],"consents":[]}' \
+            "$URL")
+          echo "WEBHOOK_TEST_START"
+          echo "$RESPONSE"
+          echo "WEBHOOK_TEST_END"
